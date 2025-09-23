@@ -1,48 +1,55 @@
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
 using namespace std;
 
-#define int long long
-
-void solve() {
-    int n, x;
-    cin >> n >> x;
-    string s;
-    cin >> s;
-
-    x--;
-
-    int walls_left = 0;
-    for (int i = 0; i < x; ++i) {
-        if (s[i] == '#') {
-            walls_left++;
-        }
-    }
-
-    int walls_right = 0;
-    for (int i = x + 1; i < n; ++i) {
-        if (s[i] == '#') {
-            walls_right++;
-        }
-    }
-
-    if (walls_left == 0 || walls_right == 0) {
-        cout << 1 << '\n';
-    } else {
-        int cells_left = x;
-        int cells_right = n - x - 1;
-        cout << min(cells_left, cells_right) + 1 << '\n';
-    }
-}
-
-int32_t main() {
+int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
-
     int t;
-    cin >> t;
-    while (t--) {
-        solve();
-    }
+    if(!(cin >> t)) return 0;
+    while(t--) {
+        int n; cin >> n;
+        vector<long long> a(n+1,0);   // 1-based for a
+        vector<long long> s(n+1,0);   // prefix sums, s[0]=0
+        vector<long long> prefMax(n+1,LLONG_MIN); // prefMax[i] = max(s[0..i])
+        s[0] = 0;
+        prefMax[0] = 0;
+        for(int i=1;i<=n;i++){
+            if(i % 2 == 1){ // odd index -> put negative (try -1)
+                // we need a[i] > max_{t=0..i-2}( s[t] - s[i-1] )
+                long long max_before = (i-2 >= 0 ? prefMax[i-2] : LLONG_MIN);
+                long long need = max_before - s[i-1]; // a[i] > need
+                long long ai = -1;
+                if( !(ai > need) ) {
+                    // pick minimal integer > need
+                    ai = need + 1;
+                }
+                a[i] = ai;
+            } else { // even index -> put positive
+                // need a[i] > max_{t=0..i-1}( s[t] - s[i-1] )
+                long long max_before = prefMax[i-1];
+                long long base_need = max_before - s[i-1]; // a[i] > base_need
+                long long ai;
+                if(i < n) {
+                    // also ensure next negative can be -1 -> stronger: a[i] >= base_need + 2
+                    ai = base_need + 2;
+                } else {
+                    // last element: minimal a[i] > base_need
+                    ai = base_need + 1;
+                }
+                // ai must be at least 1 (positive), but base_need+1/+2 already guarantees positive normally
+                if(ai <= 0) ai = 1;
+                a[i] = ai;
+            }
+            s[i] = s[i-1] + a[i];
+            prefMax[i] = max(prefMax[i-1], s[i]);
+        }
 
+        // output a[1..n]
+        for(int i=1;i<=n;i++){
+            if(i>1) cout << ' ';
+            cout << a[i];
+        }
+        cout << '\n';
+    }
     return 0;
 }
