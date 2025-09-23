@@ -1,97 +1,111 @@
-#include <iostream>
-#include <vector>
-#include <numeric>
-#include <queue>
-
+#include <bits/stdc++.h>
 using namespace std;
 
-const int MOD = 1e9 + 7;
-const int MAXN = 2e5 + 5;
+struct BFSResult {
+    int farthest;
+    vector<int> dist, parent;
+};
 
-vector<int> adj[MAXN];
-int color[MAXN];
-long long fact[MAXN];
-
-void precompute_factorials(int n) {
-    fact[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        fact[i] = (fact[i - 1] * i) % MOD;
-    }
-}
-
-void solve() {
-    int n, m;
-    cin >> n >> m;
-
-    for (int i = 1; i <= n; ++i) {
-        adj[i].clear();
-        color[i] = 0;
-    }
-
-    for (int i = 0; i < m; ++i) {
-        int u, v;
-        cin >> u >> v;
-        adj[u].push_back(v);
-        adj[v].push_back(u);
-    }
-
-    if (m > n - 1) {
-        cout << 0 << endl;
-        return;
-    }
-
-    long long count1 = 0, count2 = 0;
-    bool is_bipartite = true;
-
+BFSResult bfs_far(const vector<vector<int>>& g, int src) {
+    int n = (int)g.size() - 1;
+    vector<int> dist(n + 1, -1), parent(n + 1, -1);
     queue<int> q;
-    q.push(1);
-    color[1] = 1;
-    count1++;
-
+    q.push(src);
+    dist[src] = 0;
+    int far = src;
     while (!q.empty()) {
-        int u = q.front();
-        q.pop();
-
-        for (int v : adj[u]) {
-            if (color[v] == 0) {
-                color[v] = (color[u] == 1) ? 2 : 1;
-                if (color[v] == 1) count1++;
-                else count2++;
-                q.push(v);
-            } else if (color[v] == color[u]) {
-                is_bipartite = false;
-                break;
-            }
+        int u = q.front(); q.pop();
+        if (dist[u] > dist[far]) far = u;
+        for (int v : g[u]) if (dist[v] == -1) {
+            dist[v] = dist[u] + 1;
+            parent[v] = u;
+            q.push(v);
         }
-        if (!is_bipartite) break;
     }
-
-    if (!is_bipartite) {
-        cout << 0 << endl;
-        return;
-    }
-
-    if (count1 + count2 != n) {
-        // This case should not happen for a connected graph, but as a safeguard.
-        cout << 0 << endl;
-        return;
-    }
-
-    long long ans = (2 * fact[count1]) % MOD;
-    ans = (ans * fact[count2]) % MOD;
-
-    cout << ans << endl;
+    return {far, dist, parent};
 }
 
 int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-    precompute_factorials(200005);
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
     int t;
     cin >> t;
     while (t--) {
-        solve();
+        int n;
+        cin >> n;
+        vector<vector<int>> g(n + 1);
+        for (int i = 0; i < n - 1; ++i) {
+            int u, v;
+            cin >> u >> v;
+            g[u].push_back(v);
+            g[v].push_back(u);
+        }
+
+        // Step 1: Find diameter ends
+        auto res1 = bfs_far(g, 1);
+        auto res2 = bfs_far(g, res1.farthest);
+
+        int A = res1.farthest;
+        int B = res2.farthest;
+        vector<int> parentA = res2.parent;
+
+        // Step 2: Recover path from A to B
+        vector<int> path;
+        for (int cur = B; cur != -1; cur = parentA[cur]) {
+            path.push_back(cur);
+            if (cur == A) break;
+        }
+        reverse(path.begin(), path.end());
+
+        int L = (int)path.size() - 1; // diameter length in edges
+        if (L <= 2) {
+            cout << 0 << "\n";
+            continue;
+        }
+
+        // Step 3: Identify center(s)
+        vector<int> centers;
+        if (L % 2 == 0) {
+            centers.push_back(path[L / 2]);
+        } else {
+            centers.push_back(path[L / 2]);
+            centers.push_back(path[L / 2 + 1]);
+        }
+
+        // Allowed radius after minimization
+        int allowed_depth = L / 2;
+
+        auto count_ops = [&](int root) -> int {
+        int ops = 0;
+        vector<int> dist(n + 1, -1);
+        dist[root] = 0;
+
+        for (int nei : g[root]) {
+            // BFS/DFS from this neighbor without crossing root
+            queue<int> q;
+            q.push(nei);
+            dist[nei] = 1;
+            int maxd = 1;
+            while (!q.empty()) {
+                int u = q.front(); q.pop();
+                maxd = max(maxd, dist[u]);
+                for (int v : g[u]) if (dist[v] == -1) {
+                    dist[v] = dist[u] + 1;
+                    q.push(v);
+                }
+            }
+            if (maxd > allowed_depth) ops++;
+        }
+        return ops;
+    };
+
+
+        int ans = INT_MAX;
+        for (int c : centers) {
+            ans = min(ans, count_ops(c));
+        }
+        cout << ans << "\n";
     }
     return 0;
 }
-
