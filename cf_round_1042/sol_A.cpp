@@ -1,43 +1,23 @@
-#include <iostream>
-#include <vector>
-#include <numeric>
-#include <algorithm>
-
-void solve() {
-    int n;
-    std::cin >> n;
-    std::vector<int> a(n);
-    int fixed_val = -1;
-    bool possible = true;
-
-    for (int i = 0; i < n; ++i) {
-        std::cin >> a[i];
-        if (a[i] != -1) {
-            if (a[i] == 0) {
-                possible = false;
-            }
-            if (fixed_val == -1) {
-                fixed_val = a[i];
-            } else if (fixed_val != a[i]) {
-                possible = false;
-            }
-        }
-    }
-
-    if (possible) {
-        std::cout << "YES" << std::endl;
-    } else {
-        std::cout << "NO" << std::endl;
-    }
-}
+#include <bits/stdc++.h>
+using namespace std;
 
 int main() {
-    std::ios_base::sync_with_stdio(false);
-    std::cin.tie(NULL);
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
     int t;
-    std::cin >> t;
+    cin >> t;
     while (t--) {
-        solve();
+        int n;
+        cin >> n;
+        vector<int> a(n), b(n);
+        for (int &x : a) cin >> x;
+        for (int &x : b) cin >> x;
+
+        int pos_sum = 0;
+        for (int i = 0; i < n; i++) {
+            if (a[i] > b[i]) pos_sum += a[i] - b[i];
+        }
+        cout << pos_sum + 1 << "\n";
     }
-    return 0;
 }
